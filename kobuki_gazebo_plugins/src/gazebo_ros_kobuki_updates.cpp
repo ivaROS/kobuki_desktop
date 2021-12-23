@@ -45,6 +45,17 @@ void GazeboRosKobuki::updateJointState()
    * Joint states
    */
   std::string baselink_frame = gazebo_ros_->resolveTF("base_link");
+  /*
+  common::Time time_now;
+  #if GAZEBO_MAJOR_VERSION >= 9
+    time_now = world_->SimTime();
+  #else
+    time_now = world_->GetSimTime();
+  #endif
+  ros::Time time;
+  time.fromSec(time_now.Double());
+  joint_state_.header.stamp = time;
+  */
   joint_state_.header.stamp = ros::Time::now();
   joint_state_.header.frame_id = baselink_frame;
 
@@ -59,8 +70,10 @@ void GazeboRosKobuki::updateJointState()
   joint_state_.velocity[LEFT] = joints_[LEFT]->GetVelocity(0);
   joint_state_.velocity[RIGHT] = joints_[RIGHT]->GetVelocity(0);
 
-
-  joint_state_pub_.publish(joint_state_);
+  if(joint_state_.header.stamp > last_pub_time_)
+  {
+    joint_state_pub_.publish(joint_state_);
+  }
 }
 
 /*
@@ -145,17 +158,22 @@ void GazeboRosKobuki::updateOdometry(common::Time& step_time)
   odom_.twist.twist.angular.x = 0;
   odom_.twist.twist.angular.y = 0;
   odom_.twist.twist.angular.z = odom_vel_[2];
-  odom_pub_.publish(odom_); // publish odom message
 
-  if (publish_tf_)
+  if(joint_state_.header.stamp > last_pub_time_)
   {
-    odom_tf_.header = odom_.header;
-    odom_tf_.child_frame_id = odom_.child_frame_id;
-    odom_tf_.transform.translation.x = odom_.pose.pose.position.x;
-    odom_tf_.transform.translation.y = odom_.pose.pose.position.y;
-    odom_tf_.transform.translation.z = odom_.pose.pose.position.z;
-    odom_tf_.transform.rotation = odom_.pose.pose.orientation;
-    tf_broadcaster_.sendTransform(odom_tf_);
+    odom_pub_.publish(odom_); // publish odom message
+
+    if (publish_tf_)
+    {
+      odom_tf_.header = odom_.header;
+      odom_tf_.child_frame_id = odom_.child_frame_id;
+      odom_tf_.transform.translation.x = odom_.pose.pose.position.x;
+      odom_tf_.transform.translation.y = odom_.pose.pose.position.y;
+      odom_tf_.transform.translation.z = odom_.pose.pose.position.z;
+      odom_tf_.transform.rotation = odom_.pose.pose.orientation;
+      tf_broadcaster_.sendTransform(odom_tf_);
+    }
+    last_pub_time_ = joint_state_.header.stamp;
   }
 }
 

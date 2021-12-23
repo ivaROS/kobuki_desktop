@@ -168,6 +168,8 @@ private:
   ros::Subscriber cmd_vel_sub_;
   /// Simulation time of the last velocity command (used for time out)
   common::Time last_cmd_vel_time_;
+  /// Timestamp of last publish event (used to prevent sending messages with same timestamp)
+  ros::Time last_pub_time_;
   /// Time out for velocity commands in seconds
   double cmd_vel_timeout_;
   /// Speeds of the wheels
